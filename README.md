@@ -3,6 +3,23 @@
 Magpie provider plugin for Baidu Kuku (库库) that speaks the **native desktop MCP channel**, so
 agent clients can actually execute tools instead of answering once and stopping.
 
+## How this differs from `magpie-kuku-auth`
+
+The market already lists `magpie-kuku-auth` for the same Kuku channel. This package is a separate
+entry, not a replacement, and the difference is narrow and concrete:
+
+| | `magpie-kuku-auth` | this package |
+| --- | --- | --- |
+| Talks to | the web chat endpoint (`/v1/chat/completions` rewritten) | the **desktop client channel** (`genflowpro`: `sendmsg` + three SSE streams + MCP callback) |
+| Client tools | refused — the chat module throws `400 库库插件目前支持文本对话，尚不支持原生工具调用` | accepted: `tools`, `tool_choice` and tool messages are honoured |
+| `tool_call` in the catalog | hardcoded `false` | `true`, matching `capabilities.toolcall` |
+| Effect in an agent client | one line of prose, then the turn ends (nothing to call) | `finish_reason: "tool_calls"`, the client runs the tool, the result resumes the same upstream turn |
+| Sign-in | its own OAuth flow | its own flow **and** adopts an existing Kuku session, so no second scan |
+
+If you only need text chat, the existing plugin is the simpler choice. If your client has to call
+tools, that plugin cannot do it at all, because the capability is absent upstream of the chat
+endpoint — this one drives the desktop channel where MCP actually exists.
+
 ## The problem it fixes
 
 The text-only Kuku plugin advertises models but cannot run tools. Agent clients (Qoder CN, DSH)

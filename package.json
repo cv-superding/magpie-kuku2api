@@ -43,8 +43,8 @@
   "magpie": {
     "name": "库库 AI（原生工具）",
     "summary": {
-      "en": "Baidu Kuku AI in magpie with the native MCP tool channel: the model really calls your client tools, with streaming and session reuse.",
-      "zh": "把百度库库 AI 接进 magpie，走库库原生 MCP 工具通道：模型真的能调用你的客户端工具，支持流式与会话复用。"
+      "en": "Baidu Kuku AI over the desktop MCP channel, so client tools really run. Differs from magpie-kuku-auth: that one uses the text-only web chat endpoint and refuses tools; this one drives genflowpro (sendmsg + three SSE streams + MCP callback), so a tools request becomes finish_reason tool_calls and the caller's result resumes the same turn. Streams, reuses an existing Kuku login.",
+      "zh": "把百度库库 AI 接进 magpie，走桌面端 MCP 通道，客户端工具真的能跑。与 magpie-kuku-auth 的差异：后者走纯文本网页对话接口、直接拒绝工具；本插件走 genflowpro（sendmsg + 三条 SSE + MCP 回调），带 tools 的请求会返回 finish_reason tool_calls，工具结果回填后同一轮继续生成。支持流式，可复用已有库库登录态。"
     },
     "icon": "https://th.bing.com/th/id/ODF.z66EbNM-Crm_PZiAFFGVjg?w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
     "maxConcurrency": 2

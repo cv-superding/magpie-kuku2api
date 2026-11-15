@@ -59,6 +59,35 @@ The browser profile is derived from the account id and kept under
 day, which is the pattern the risk control looks for; one account keeps one identity. Override the
 location with `MAGPIE_KUKU_PROFILE_ROOT`.
 
+### When the sign-in is refused with 8001
+
+`8001 账号存在风险，请切换账号或设备参加活动` is the **account's** state, not this plugin's
+request. Measured on one blocked account, every route answers the same:
+
+| Route | Result |
+|---|---|
+| plain HTTP `POST /act/v2/kukuai30/signin` | `8001` |
+| same, with `gfprotpl=genflow` / no `gfprotpl` / `gfprotpl=genflowpro` | `8001` each |
+| headless Chrome, stealth script, warm-up navigation | `8001` |
+| headful Chrome — a visible window on a real profile | `8001` |
+
+Another project's script author reached the same wall and wrote it down: the activity endpoint
+needs a page-side anti-bot parameter, plain HTTP requests are answered with "账号异常", and the
+only thing that works is pressing the page's own button. That is what this does — and when the
+account is already flagged, even that is refused.
+
+What is left is the one step no code can do for the account: clear the check once at
+`https://kuku.baidu.com/operation/activitys/kukuPcSignAct/main`, which is the link the plugin
+reports. Runs after that sign in normally, unattended.
+
+Everything that can be made to look ordinary already is, and it costs nothing:
+
+- `--disable-blink-features=AutomationControlled`, plus a script that runs before page scripts to
+  clear `navigator.webdriver` and fill in the plugin and language lists
+- one ordinary page navigation before the activity page, rather than landing on the campaign
+- a persistent per-account profile instead of a new device each run
+- `KUKU_CHECKIN_HEADFUL=1` opens a real window, which is what a person's browser looks like
+
 ## How the round-trip works
 
 ```

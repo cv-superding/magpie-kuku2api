@@ -18,6 +18,7 @@ import { mkdir } from "node:fs/promises"
 
 const ID = PROVIDER
 const NAME = "库库 AI（原生工具）"
+const WINDOW_OPTION = "signInWindow"
 
 // The sign-in activity is pressed by a real browser, and a freshly-made profile
 // reads as a new device at every check-in — which is what the risk control is
@@ -114,6 +115,18 @@ export const KukuAgentPlugin = async () => ({
 
   auth: {
     provider: ID,
+    options: [
+      {
+        key: WINDOW_OPTION,
+        label: "Open a browser window for the sign-in",
+        description:
+          "Pressing 立即签到 opens a real Chrome window on the activity page, presses the button, and waits for you. If Kuku's risk control stops it, clear the check in that window and the run finishes by itself. Turn this off for an invisible, unattended sign-in.",
+        labels: { zh: "签到弹出浏览器窗口" },
+        descriptions: {
+          zh: "点「立即签到」时打开一个真实的 Chrome 窗口停在活动页，替你点按钮后等你操作。若被库库风控拦下，在窗口里过一次验证即可，签到会自动完成。关闭则不弹窗，后台静默签到。",
+        },
+      },
+    ],
     methods: [
       {
         type: "oauth",
@@ -220,7 +233,12 @@ export const KukuAgentPlugin = async () => ({
         if (!a?.access) return { outcome: "failed", message: "库库：请先登录" }
         const uid = String(a.uid ?? a.accountId ?? "")
         client = new WebClient(a, { accountId: uid, browserProfile: await signInProfile(uid) })
-        return await runCheckin(client)
+        // A window the user can see is the default: it is what a person's browser
+        // looks like, and when risk control does stop the press, they can clear the
+        // check in it and the run finishes on its own. Turning the option off keeps
+        // the sign-in invisible and unattended.
+        const headful = globalThis.magpie?.option?.(ID, WINDOW_OPTION) !== false
+        return await runCheckin(client, { headful })
       } catch (e) {
         return { outcome: "failed", message: safeMessage(e, client?.cookies) }
       }

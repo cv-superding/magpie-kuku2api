@@ -76,17 +76,22 @@ needs a page-side anti-bot parameter, plain HTTP requests are answered with "账
 only thing that works is pressing the page's own button. That is what this does — and when the
 account is already flagged, even that is refused.
 
-What is left is the one step no code can do for the account: clear the check once at
-`https://kuku.baidu.com/operation/activitys/kukuPcSignAct/main`, which is the link the plugin
-reports. Runs after that sign in normally, unattended.
+**So the sign-in runs in a window by default.** Pressing 立即签到 opens a real Chrome window on
+the activity page, presses the button, and waits. If the account is clean it finishes in a few
+seconds and the window closes. If risk control stops it, the window **stays open for three
+minutes** so the check can be cleared right there — the moment `signed_today` turns true, the run
+finishes on its own. Verified: headless returns `captcha` in ~10s, headful keeps the window for
+the full budget instead of vanishing mid-check.
 
-Everything that can be made to look ordinary already is, and it costs nothing:
+Turn the window off in the provider's options (*签到弹出浏览器窗口*) for an invisible,
+unattended sign-in — worth it only once the account is clean.
+
+Everything that can be made to look ordinary already is:
 
 - `--disable-blink-features=AutomationControlled`, plus a script that runs before page scripts to
   clear `navigator.webdriver` and fill in the plugin and language lists
 - one ordinary page navigation before the activity page, rather than landing on the campaign
 - a persistent per-account profile instead of a new device each run
-- `KUKU_CHECKIN_HEADFUL=1` opens a real window, which is what a person's browser looks like
 
 ## How the round-trip works
 

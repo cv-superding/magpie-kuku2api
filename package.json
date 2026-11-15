@@ -1,6 +1,6 @@
 {
   "name": "magpie-kuku2api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Baidu Kuku AI provider for Magpie with the native MCP tool channel: real client tool calls, streaming chat, session reuse",
   "type": "module",
   "main": "./index.mjs",

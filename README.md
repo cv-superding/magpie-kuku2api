@@ -54,7 +54,7 @@ The second request is matched back to the first by the reserved `call_kuku_mcp_*
 transcript tail. The bridge then delivers the results on the original MCP callbacks, so the
 upstream keeps generating in the **same** turn instead of replaying history.
 
-### Two details that are easy to get wrong
+### Three details that are easy to get wrong
 
 - **The MCP control streams outlive a turn.** The upstream considers the client online only while
   they are connected. Tearing them down at the end of the first half made the model answer
@@ -65,6 +65,14 @@ upstream keeps generating in the **same** turn instead of replaying history.
   through `bridge.turnState` rather than the locals of the turn that created them. The same
   applies to the transport signal: callbacks resolve it lazily, because the signal of the turn
   that issued the tool call is already aborted by the time the result is delivered.
+- **A long conversation has to be cut, not refused.** The upstream reads the caller's transcript
+  as one JSON blob inside a prompt and refuses anything past ~2 MiB. Raising that as an error was
+  wrong twice over: the caller does not own the conversation it is being asked to compress, and
+  by the time the error arrives the turn is already lost. `fitMessages` now drops the oldest
+  turns instead, keeping the opening task and the turn being answered, and clips oversized tool
+  results in place. A call is never separated from its result — a `tool_calls` entry with no
+  matching `tool` message is what breaks the next request. A real 4.30 MiB transcript that used
+  to fail now answers in 11 seconds.
 
 ## Install
 
@@ -110,7 +118,7 @@ chat but not for tools. The second method accepts a pasted cookie string or the 
 Offline contract tests (mock upstream, no account needed):
 
 ```bash
-node --test test/plugin.test.mjs
+node --test "test/*.test.mjs"
 ```
 
 Live checks against the real account (needs a stored Kuku session):
@@ -120,4 +128,5 @@ node test/live/provider.mjs      # contract + capability declarations
 node test/live/single-turn.mjs   # one tool round-trip
 node test/live/multi-turn.mjs    # consecutive tool rounds
 node test/live/stream.mjs        # the SSE shape agent clients use
+node test/live/oversized.mjs     # a 4 MiB transcript is cut down, not refused
 ```

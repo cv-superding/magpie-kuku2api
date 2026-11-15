@@ -1,0 +1,34 @@
+# GNU AFFERO GENERAL PUBLIC LICENSE
+
+Version 3, 19 November 2007
+
+Copyright (C) 2026 cv-superding
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+---
+
+The full text of the GNU Affero General Public License version 3 is available at:
+
+  https://www.gnu.org/licenses/agpl-3.0.txt
+
+## Additional context for this project
+
+This plugin integrates with Baidu Kuku (库库) through that service's own desktop
+client channel. It is an independent, unofficial integration: it is not
+affiliated with, endorsed by, or supported by Baidu. Use of the upstream service
+is governed entirely by Baidu's own terms of service and privacy policy, which
+take precedence over anything stated here.
+
+You are responsible for ensuring that your use of this software complies with
+the upstream service's terms and with any applicable law in your jurisdiction.

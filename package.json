@@ -1,0 +1,52 @@
+{
+  "name": "magpie-kuku2api",
+  "version": "1.0.0",
+  "description": "Baidu Kuku AI provider for Magpie with the native MCP tool channel: real client tool calls, streaming chat, session reuse",
+  "type": "module",
+  "main": "./index.mjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cv-superding/magpie-kuku2api.git"
+  },
+  "homepage": "https://github.com/cv-superding/magpie-kuku2api#readme",
+  "bugs": {
+    "url": "https://github.com/cv-superding/magpie-kuku2api/issues"
+  },
+  "author": "cv-superding",
+  "files": [
+    "index.mjs",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check index.mjs && node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "magpie",
+    "magpie-plugin",
+    "opencode",
+    "opencode-plugin",
+    "baidu",
+    "kuku",
+    "kuku2api",
+    "genflow",
+    "mcp",
+    "tool-calls",
+    "ai-sdk"
+  ],
+  "license": "AGPL-3.0-only",
+  "magpie": {
+    "name": "库库 AI（原生工具）",
+    "summary": {
+      "en": "Baidu Kuku AI in magpie with the native MCP tool channel: the model really calls your client tools, with streaming and session reuse.",
+      "zh": "把百度库库 AI 接进 magpie，走库库原生 MCP 工具通道：模型真的能调用你的客户端工具，支持流式与会话复用。"
+    },
+    "icon": "https://th.bing.com/th/id/ODF.z66EbNM-Crm_PZiAFFGVjg?w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+    "maxConcurrency": 2
+  }
+}

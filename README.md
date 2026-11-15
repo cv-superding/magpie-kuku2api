@@ -37,6 +37,28 @@ Three things change here:
    becomes an OpenAI `finish_reason: "tool_calls"`, and the caller's result is delivered back to
    the still-open upstream turn.
 
+## The account card
+
+Two things sit on the provider's card besides the sign-in state.
+
+**Points left.** `usage()` reads `/bizapi/gfpro/getgfvipremain` with the same credential the turns
+spend, so the number shown and the number charged are the same account. A missing balance is
+reported as an error rather than drawn as `0 积分` — a zero balance and an unreadable one mean
+opposite things to someone deciding whether to keep working.
+
+**The daily sign-in.** `checkin()` presses the activity page's own button.
+
+Kuku's token endpoint answers `jsToken: null` on this account, so the pure-HTTP path its own web
+app uses does not complete, and the sign-in falls back to a real browser on the activity page:
+headless Chrome or Edge, the account's cookie, and a click on `button.pc-sign-btn`. Nothing
+synthesises a risk-control proof or solves a captcha. A block comes back as `captcha` with the
+site's own message, so the user knows to clear it on the site.
+
+The browser profile is derived from the account id and kept under
+`%LOCALAPPDATA%\Magpie\kuku-profiles`. A fresh profile per run would read as a new device every
+day, which is the pattern the risk control looks for; one account keeps one identity. Override the
+location with `MAGPIE_KUKU_PROFILE_ROOT`.
+
 ## How the round-trip works
 
 ```
@@ -106,12 +128,16 @@ chat but not for tools. The second method accepts a pasted cookie string or the 
 
 | File | Role |
 | --- | --- |
-| `index.mjs` | Plugin contract: `config` / `provider.models` / `auth.loader` / `auth.usage` |
-| `lib/protocol.mjs` | genflowpro desktop transport (sendmsg, SSE, MCP callback, close) |
-| `lib/tools.mjs` | OpenAI ⇄ MCP conversion, schema checks, tool fingerprints |
+| `index.mjs` | Plugin contract: `config` / `provider.models` / `auth.loader` / `auth.usage` / `auth.checkin` |
+| `lib/protocol.mjs` | genflowpro desktop transport (sendmsg, SSE, MCP callback, close) and the points balance |
+| `lib/tools.mjs` | OpenAI ⇄ MCP conversion, schema checks, tool fingerprints, transcript fitting |
 | `lib/native.mjs` | Three-stream MCP orchestration and the handoff / resume state machine |
 | `lib/chat.mjs` | OpenAI facade, bridge registry, text and tool paths |
 | `lib/auth.mjs` | Session adoption and cookie parsing |
+| `lib/checkin/web-client.mjs` | The activity endpoint client (browser UA, activity Referer) |
+| `lib/checkin/checkin.mjs` | The daily sign-in, including the legacy login-reward fallback |
+| `lib/checkin/website.mjs` | Presses the activity page's own sign-in button over CDP |
+| `lib/checkin/browser.mjs` / `profiles.mjs` | Headless browser launch and the per-account profile |
 
 ## Verify
 
@@ -129,4 +155,6 @@ node test/live/single-turn.mjs   # one tool round-trip
 node test/live/multi-turn.mjs    # consecutive tool rounds
 node test/live/stream.mjs        # the SSE shape agent clients use
 node test/live/oversized.mjs     # a 4 MiB transcript is cut down, not refused
+node test/live/usage.mjs         # the points balance the account card draws
+node test/live/checkin.mjs       # the daily sign-in (really presses the button)
 ```

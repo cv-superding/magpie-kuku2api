@@ -7,12 +7,39 @@
 //      followed by silence in agent clients);
 //   2. chat/completions accepts tools / tool_choice / tool messages instead of rejecting them;
 //   3. tools are executed by the caller through a real MCP connector, not emulated in prompt.
-import { ORIGIN, UpstreamError } from "./lib/protocol.mjs"
+import { ORIGIN, UpstreamError, KukuNativeAccount } from "./lib/protocol.mjs"
 import { chatResponse, CALL_PREFIX } from "./lib/chat.mjs"
 import { adoptExistingSession, verifyAccessString, verifyNative, parseCookies, PROVIDER } from "./lib/auth.mjs"
+import { WebClient } from "./lib/checkin/web-client.mjs"
+import { checkin as runCheckin } from "./lib/checkin/checkin.mjs"
+import { bindProfile, ownedProfile, profilePath } from "./lib/checkin/profiles.mjs"
+import { createHash } from "node:crypto"
+import { mkdir } from "node:fs/promises"
 
 const ID = PROVIDER
 const NAME = "库库 AI（原生工具）"
+
+// The sign-in activity is pressed by a real browser, and a freshly-made profile
+// reads as a new device at every check-in — which is what the risk control is
+// watching for. The id is derived from the account instead, so one account keeps
+// one browser identity across runs.
+async function signInProfile(uid) {
+  if (!uid) return undefined
+  const id = "kuku-" + createHash("sha256").update(String(uid)).digest("hex").slice(0, 12)
+  try {
+    await ownedProfile(id, uid)
+    return id
+  } catch {
+    // Not made yet, or made for another account: build it for this one.
+    try {
+      await mkdir(profilePath(id), { recursive: true })
+      await bindProfile(id, uid)
+      return id
+    } catch {
+      return undefined // a browser profile is an optimisation, not a requirement
+    }
+  }
+}
 
 const catalogModel = (name) => ({
   name,
@@ -161,19 +188,41 @@ export const KukuAgentPlugin = async () => ({
       }
     },
 
+    // The account's remaining points, from the same credential the turns spend.
+    // What was here before reported "可用模型 13 个", which is a capability count,
+    // not a balance — the card had no number a user could act on.
     async usage(getAuth) {
       try {
         const own = await getAuth().catch(() => null)
         const a = own?.access ? own : await adoptExistingSession()
         if (!a?.access) return { error: "请先登录库库", signIn: "kept" }
-        const catalog = await verifyNative(a)
+        const b = await new KukuNativeAccount(a).balance()
         return {
           plan: NAME,
-          user: a.name || a.accountId || "库库账号",
-          windows: [{ name: "可用模型", used: 0, display: `${catalog.models.length} 个`, aside: true }],
+          user: b.name || a.name || a.accountId || "库库账号",
+          windows: [{ name: "库库积分", used: 0, display: `${b.balance} 积分`, aside: true }],
         }
       } catch (e) {
         return { error: safeMessage(e), signIn: e?.status === 401 ? "expired" : "kept" }
+      }
+    },
+
+    // The daily points. Kuku's own token endpoint answers `jsToken: null` on this
+    // account, so the sign-in is pressed the way a person presses it: the
+    // activity page's own button, in a browser holding this account's profile.
+    // Nothing here synthesises a proof or solves a captcha — a risk-control block
+    // is reported as one and left for the user to clear on the site.
+    async checkin(getAuth) {
+      let client
+      try {
+        const own = await getAuth().catch(() => null)
+        const a = own?.access ? own : await adoptExistingSession()
+        if (!a?.access) return { outcome: "failed", message: "库库：请先登录" }
+        const uid = String(a.uid ?? a.accountId ?? "")
+        client = new WebClient(a, { accountId: uid, browserProfile: await signInProfile(uid) })
+        return await runCheckin(client)
+      } catch (e) {
+        return { outcome: "failed", message: safeMessage(e, client?.cookies) }
       }
     },
   },

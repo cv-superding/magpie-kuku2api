@@ -76,12 +76,21 @@ needs a page-side anti-bot parameter, plain HTTP requests are answered with "账
 only thing that works is pressing the page's own button. That is what this does — and when the
 account is already flagged, even that is refused.
 
-**So the sign-in runs in a window by default.** Pressing 立即签到 opens a real Chrome window on
-the activity page, presses the button, and waits. If the account is clean it finishes in a few
-seconds and the window closes. If risk control stops it, the window **stays open for three
-minutes** so the check can be cleared right there — the moment `signed_today` turns true, the run
-finishes on its own. Verified: headless returns `captcha` in ~10s, headful keeps the window for
-the full budget instead of vanishing mid-check.
+**So the sign-in runs in a window, and the window owns its own lifetime.** Pressing 立即签到
+answers at once (measured: 53 ms) and opens a real Chrome window on the activity page. The run
+then looks after itself for three minutes: it presses the button, and if the refusal comes back as
+8001 it keeps waiting rather than closing — that refusal is on screen, and you are about to clear
+it. The moment the page reports `signed_today`, the run finishes and closes the window.
+
+Two details came out of a real failure, both worth keeping:
+
+- **The request must not own the window.** A caller's patience is not how long a person takes to
+  clear a check. The first version awaited the whole run, so when the request ended the browser
+  closed under the user's hands before they had done anything. The run now owns its own lifetime
+  and the caller is answered immediately with what to do.
+- **A refusal is not the end of a windowed run.** The plugin's press is answered `8001` before the
+  user can act, so treating that reply as final tore the window down two seconds after it opened.
+  Only an unattended run treats it as final.
 
 Turn the window off in the provider's options (*签到弹出浏览器窗口*) for an invisible,
 unattended sign-in — worth it only once the account is clean.
@@ -191,4 +200,5 @@ node test/live/stream.mjs        # the SSE shape agent clients use
 node test/live/oversized.mjs     # a 4 MiB transcript is cut down, not refused
 node test/live/usage.mjs         # the points balance the account card draws
 node test/live/checkin.mjs       # the daily sign-in (really presses the button)
+node test/live/detach.mjs        # the caller is answered at once, the window stays
 ```

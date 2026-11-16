@@ -235,10 +235,19 @@ export const KukuAgentPlugin = async () => ({
         client = new WebClient(a, { accountId: uid, browserProfile: await signInProfile(uid) })
         // A window the user can see is the default: it is what a person's browser
         // looks like, and when risk control does stop the press, they can clear the
-        // check in it and the run finishes on its own. Turning the option off keeps
-        // the sign-in invisible and unattended.
+        // check in it and the run finishes on its own.
         const headful = globalThis.magpie?.option?.(ID, WINDOW_OPTION) !== false
-        return await runCheckin(client, { headful })
+        if (!headful) return await runCheckin(client, { headful: false })
+
+        // The window must outlive this request. A sign-in that waits for a person
+        // cannot be tied to a caller's patience: when the request ends, the run was
+        // torn down mid-window and the browser closed under the user's hands —
+        // which is exactly what happened. So the run owns its own lifetime and the
+        // caller is answered at once with what to do.
+        void runCheckin(client, { headful: true })
+          .then((r) => console.error("[kuku] checkin finished:", JSON.stringify(r)))
+          .catch((e) => console.error("[kuku] checkin failed:", safeMessage(e, client?.cookies)))
+        return { outcome: "captcha", message: "已打开浏览器窗口，请在窗口内完成签到；窗口会在完成后自动关闭" }
       } catch (e) {
         return { outcome: "failed", message: safeMessage(e, client?.cookies) }
       }
